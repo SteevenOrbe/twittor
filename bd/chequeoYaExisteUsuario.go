@@ -6,6 +6,7 @@ import (
 
 	"github.com/SteevenOrbe/twittor/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // ChequeoYaExisteUsuario recibe el email de parametro y chequea si ya esta en la BD.
@@ -16,7 +17,7 @@ func ChequeoYaExisteUsuario(email string) (models.Usuario, bool, string) {
 	db := MongoCN.Database("twittor")
 	col := db.Collection("usuarios")
 
-	condicion := bson.M{"email:": email}
+	condicion := bson.M{"email": email}
 
 	var resultado models.Usuario
 
@@ -26,9 +27,11 @@ func ChequeoYaExisteUsuario(email string) (models.Usuario, bool, string) {
 	ID := resultado.ID.Hex() //convierte hexadecimal a string.
 
 	if err != nil {
-		return resultado, false, ID
+		if err == mongo.ErrNoDocuments {
+			return resultado, false, ID // No se encontró ningún documento, por lo que no existe un usuario con ese email.
+		}
+		return resultado, false, ID // Ocurrió un error diferente al no encontrar documentos.
 	}
 
-	return resultado, true, ID // va a devoolver toda la colecion del usuario.
-
+	return resultado, true, ID
 }
